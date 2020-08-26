@@ -12,34 +12,37 @@ import maya.OpenMaya as OM
 Rad2Deg = 57.295779513082320876798154814105
 Deg2Rad = 0.017453292519943295769236907684886
 
-rooStr2Int = {'xyz':0, 'yzx':1, 'zxy':2, 'xzy':3, 'yxz':4, 'zyx':5}
-rooInt2Str = {0:'xyz', 1:'yzx', 2:'zxy', 3:'xzy', 4:'yxz', 5:'zyx'}
+rooStr2Int = {'xyz': 0, 'yzx': 1, 'zxy': 2, 'xzy': 3, 'yxz': 4, 'zyx': 5}
+rooInt2Str = {0: 'xyz', 1: 'yzx', 2: 'zxy', 3: 'xzy', 4: 'yxz', 5: 'zyx'}
 
 
-def euler2mat(_euler, _roo, degrees = True):
-        roo = _roo.lower()
+def euler2mat(_euler, _roo, degrees=True):
+    roo = _roo.lower()
 
-        if degrees:
-            rx = _euler[0] * Deg2Rad
-            ry = _euler[1] * Deg2Rad
-            rz = _euler[2] * Deg2Rad
-        else:
-            rx = _euler[0]
-            ry = _euler[1]
-            rz = _euler[2]
+    if degrees:
+        rx = _euler[0] * Deg2Rad
+        ry = _euler[1] * Deg2Rad
+        rz = _euler[2] * Deg2Rad
+    else:
+        rx = _euler[0]
+        ry = _euler[1]
+        rz = _euler[2]
 
-	euler = OM.MEulerRotation(rx,ry,rz,rooStr2Int[roo])
-        return euler.asMatrix()
+    euler = OM.MEulerRotation(rx, ry, rz, rooStr2Int[roo])
+    return euler.asMatrix()
 
-def mat2euler(_m, _roo, degrees = True):
-        roo = _roo.lower()
 
-        m = OM.MTransformationMatrix(_m) # MMAtrix to MTransformationMatrix
-        euler = m.eulerRotation()
+def mat2euler(_m, _roo, degrees=True):
+    roo = _roo.lower()
 
-	euler = euler.reorder(rooStr2Int[roo])
-        if degrees: euler = euler * Rad2Deg
-        return [euler[0], euler[1], euler[2]]
+    m = OM.MTransformationMatrix(_m)  # MMAtrix to MTransformationMatrix
+    euler = m.eulerRotation()
+
+    euler = euler.reorder(rooStr2Int[roo])
+    if degrees:
+        euler = euler * Rad2Deg
+    return [euler[0], euler[1], euler[2]]
+
 
 class BVHExporter:
 
@@ -48,44 +51,50 @@ class BVHExporter:
         self.dataCount = 0
         self.scale = [1.0, 1.0, 1.0]
 
-
     def writeJoint(self, fileid, sjoint, indent):
         parents = cmds.listRelatives(sjoint, allParents=True)
 
         translate = []
         euler = []
         if parents is not None:
-           translate = cmds.xform(sjoint, q=True, translation=True)
-           euler = cmds.xform(sjoint, q=True, rotation=True)
+            translate = cmds.xform(sjoint, q=True, translation=True)
+            euler = cmds.xform(sjoint, q=True, rotation=True)
 
-           x = self.scale[0] * translate[0]
-           y = self.scale[1] * translate[1]
-           z = self.scale[2] * translate[2]
-           line1 = "%sOFFSET %.4f %.4f %.4f\n"%(indent, x, y, z)
-           line2 = "%sCHANNELS 3 "%(indent)
-           fileid.writelines(line1)
-           fileid.writelines(line2)
+            x = self.scale[0] * translate[0]
+            y = self.scale[1] * translate[1]
+            z = self.scale[2] * translate[2]
+            line1 = "%sOFFSET %.4f %.4f %.4f\n" % (indent, x, y, z)
+            line2 = "%sCHANNELS 3 " % (indent)
+            fileid.writelines(line1)
+            fileid.writelines(line2)
 
         else:
-           translate = cmds.xform(sjoint, worldSpace=True, q=True, translation=True)
-           euler = cmds.xform(sjoint, worldSpace=True, q=True, rotation=True)
+            translate = cmds.xform(
+                sjoint, worldSpace=True, q=True, translation=True)
+            euler = cmds.xform(sjoint, worldSpace=True, q=True, rotation=True)
 
-           line1 = "%sOFFSET 0.0 0.0 0.0"%(indent)
-           line2 = "%sCHANNELS 6 Xposition Yposition Zposition "%(indent)
-           fileid.writelines(line1+"\n")
-           fileid.writelines(line2)
+            line1 = "%sOFFSET 0.0 0.0 0.0" % (indent)
+            line2 = "%sCHANNELS 6 Xposition Yposition Zposition " % (indent)
+            fileid.writelines(line1+"\n")
+            fileid.writelines(line2)
 
-           self.frameData.append(translate)
-           self.dataCount = self.dataCount + 1
+            self.frameData.append(translate)
+            self.dataCount = self.dataCount + 1
 
         ro = cmds.xform(sjoint, q=True, roo=True)
 
-        if ro == "zyx": fileid.writelines ("Xrotation Yrotation Zrotation\n")
-        if ro == "yzx": fileid.writelines ("Xrotation Zrotation Yrotation\n")
-        if ro == "zxy": fileid.writelines ("Yrotation Xrotation Zrotation\n")
-        if ro == "xzy": fileid.writelines ("Yrotation Zrotation Xrotation\n")
-        if ro == "yxz": fileid.writelines ("Zrotation Xrotation Yrotation\n")
-        if ro == "xyz": fileid.writelines ("Zrotation Yrotation Xrotation\n")
+        if ro == "zyx":
+            fileid.writelines("Xrotation Yrotation Zrotation\n")
+        if ro == "yzx":
+            fileid.writelines("Xrotation Zrotation Yrotation\n")
+        if ro == "zxy":
+            fileid.writelines("Yrotation Xrotation Zrotation\n")
+        if ro == "xzy":
+            fileid.writelines("Yrotation Zrotation Xrotation\n")
+        if ro == "yxz":
+            fileid.writelines("Zrotation Xrotation Yrotation\n")
+        if ro == "xyz":
+            fileid.writelines("Zrotation Yrotation Xrotation\n")
 
         # Apply joint orientation as well
         jroo = cmds.joint(sjoint, q=True, roo=True)
@@ -95,14 +104,20 @@ class BVHExporter:
         newmat = mat * jmat
         neweuler = mat2euler(newmat, ro, True)
 
-        if ro == "zyx": self.frameData.append([neweuler[0], neweuler[1], neweuler[2]])
-        if ro == "yzx": self.frameData.append([neweuler[0], neweuler[2], neweuler[1]])
-        if ro == "zxy": self.frameData.append([neweuler[1], neweuler[0], neweuler[2]])
-        if ro == "xzy": self.frameData.append([neweuler[1], neweuler[2], neweuler[0]])
-        if ro == "yxz": self.frameData.append([neweuler[2], neweuler[0], neweuler[1]])
-        if ro == "xyz": self.frameData.append([neweuler[2], neweuler[1], neweuler[0]])
+        if ro == "zyx":
+            self.frameData.append([neweuler[0], neweuler[1], neweuler[2]])
+        if ro == "yzx":
+            self.frameData.append([neweuler[0], neweuler[2], neweuler[1]])
+        if ro == "zxy":
+            self.frameData.append([neweuler[1], neweuler[0], neweuler[2]])
+        if ro == "xzy":
+            self.frameData.append([neweuler[1], neweuler[2], neweuler[0]])
+        if ro == "yxz":
+            self.frameData.append([neweuler[2], neweuler[0], neweuler[1]])
+        if ro == "xyz":
+            self.frameData.append([neweuler[2], neweuler[1], neweuler[0]])
 
-        self.dataCount =  self.dataCount + 1
+        self.dataCount = self.dataCount + 1
 
     def getJoint(self, sjoint):
         parents = cmds.listRelatives(sjoint, allParents=True)
@@ -110,19 +125,21 @@ class BVHExporter:
         translate = []
         euler = []
         if parents is not None:
-           translate = cmds.xform(sjoint, q=True, translation=True, objectSpace=True)
-           euler = cmds.xform(sjoint, q=True, rotation=True, objectSpace=True)
+            translate = cmds.xform(
+                sjoint, q=True, translation=True, objectSpace=True)
+            euler = cmds.xform(sjoint, q=True, rotation=True, objectSpace=True)
 
-           x = self.scale[0] * translate[0]
-           y = self.scale[1] * translate[1]
-           z = self.scale[2] * translate[2]
+            x = self.scale[0] * translate[0]
+            y = self.scale[1] * translate[1]
+            z = self.scale[2] * translate[2]
 
         else:
-           translate = cmds.xform(sjoint, worldSpace=True, q=True, translation=True)
-           euler = cmds.xform(sjoint, worldSpace=True, q=True, rotation=True)
+            translate = cmds.xform(
+                sjoint, worldSpace=True, q=True, translation=True)
+            euler = cmds.xform(sjoint, worldSpace=True, q=True, rotation=True)
 
-           self.frameData.append(translate)
-           self.dataCount = self.dataCount + 1
+            self.frameData.append(translate)
+            self.dataCount = self.dataCount + 1
 
         ro = cmds.xform(sjoint, q=True, roo=True)
 
@@ -134,47 +151,55 @@ class BVHExporter:
         newmat = mat * jmat
         neweuler = mat2euler(newmat, ro, True)
 
-        if ro == "zyx": self.frameData.append([neweuler[0], neweuler[1], neweuler[2]])
-        if ro == "yzx": self.frameData.append([neweuler[0], neweuler[2], neweuler[1]])
-        if ro == "zxy": self.frameData.append([neweuler[1], neweuler[0], neweuler[2]])
-        if ro == "xzy": self.frameData.append([neweuler[1], neweuler[2], neweuler[0]])
-        if ro == "yxz": self.frameData.append([neweuler[2], neweuler[0], neweuler[1]])
-        if ro == "xyz": self.frameData.append([neweuler[2], neweuler[1], neweuler[0]])
+        if ro == "zyx":
+            self.frameData.append([neweuler[0], neweuler[1], neweuler[2]])
+        if ro == "yzx":
+            self.frameData.append([neweuler[0], neweuler[2], neweuler[1]])
+        if ro == "zxy":
+            self.frameData.append([neweuler[1], neweuler[0], neweuler[2]])
+        if ro == "xzy":
+            self.frameData.append([neweuler[1], neweuler[2], neweuler[0]])
+        if ro == "yxz":
+            self.frameData.append([neweuler[2], neweuler[0], neweuler[1]])
+        if ro == "xyz":
+            self.frameData.append([neweuler[2], neweuler[1], neweuler[0]])
 
-        self.dataCount =  self.dataCount + 1
+        self.dataCount = self.dataCount + 1
 
     def exportJoint(self, fileid, root, indent):
         jointName = string.split(root, '|')[-1]
-        line1 = "%sJOINT %s"%(indent, jointName)
-        line2 = "%s{"%(indent)
+        line1 = "%sJOINT %s" % (indent, jointName)
+        line2 = "%s{" % (indent)
         fileid.writelines(line1+"\n")
         fileid.writelines(line2+"\n")
 
-        self.writeJoint(fileid, root, indent + "\t");
+        self.writeJoint(fileid, root, indent + "\t")
 
-        children = cmds.listRelatives(root, children=True, type='joint', fullPath=True)
+        children = cmds.listRelatives(
+            root, children=True, type='joint', fullPath=True)
         if children is not None:
             for eachChild in children:
-                 self.exportJoint(fileid, eachChild, indent + "\t")
+                self.exportJoint(fileid, eachChild, indent + "\t")
 
-        line2 = "%s}"%(indent)
+        line2 = "%s}" % (indent)
         fileid.writelines(line2+"\n")
 
     def getJointData(self, root):
         self.getJoint(root)
 
-        children = cmds.listRelatives(root, children=True, type='joint', fullPath=True)
+        children = cmds.listRelatives(
+            root, children=True, type='joint', fullPath=True)
         if children is not None:
             for eachChild in children:
-                 self.getJointData(eachChild)
+                self.getJointData(eachChild)
 
     def exportBindPose(self, fileid):
 
         root = cmds.ls(sl=True, type='joint')
         print root
         if root is None or len(root) == 0:
-           print "ERROR: Please select the root joint\n"
-           return
+            print "ERROR: Please select the root joint\n"
+            return
 
         self.dataCount = 0
         self.frameData = []
@@ -194,15 +219,15 @@ class BVHExporter:
         fileid.writelines("Frame Time: 0.033333\n")
 
         for each in self.frameData:
-            print "%.4f %.4f %.4f "%(each[0], each[1], each[2])
-            fileid.writelines("%.4f %.4f %.4f "%(each[0], each[1], each[2]))
+            print "%.4f %.4f %.4f " % (each[0], each[1], each[2])
+            fileid.writelines("%.4f %.4f %.4f " % (each[0], each[1], each[2]))
 
     def exportAllPoses(self, fileid):
         root = cmds.ls(sl=True, type='joint')
         print root
         if root is None or len(root) == 0:
-           print "ERROR: Please select the root joint\n"
-           return
+            print "ERROR: Please select the root joint\n"
+            return
 
         startFrame = cmds.playbackOptions(minTime=True, query=True)
         endFrame = cmds.playbackOptions(maxTime=True, query=True)
@@ -221,11 +246,11 @@ class BVHExporter:
         numFrames = int(endFrame - startFrame + 1)
 
         fileid.writelines("MOTION\n")
-        fileid.writelines("Frames: %d\n"%(numFrames))
-        fileid.writelines("Frame Time: 0.00833333\n") # Assumes 120 fps
+        fileid.writelines("Frames: %d\n" % (numFrames))
+        fileid.writelines("Frame Time: 0.00833333\n")  # Assumes 120 fps
 
         for each in self.frameData:
-            fileid.writelines("%.4f %.4f %.4f "%(each[0], each[1], each[2]))
+            fileid.writelines("%.4f %.4f %.4f " % (each[0], each[1], each[2]))
 
         for i in range(1, numFrames):
             cmds.currentTime(i, edit=True)
@@ -233,7 +258,8 @@ class BVHExporter:
             self.getJointData(root[0])
             fileid.writelines("\n")
             for each in self.frameData:
-                fileid.writelines("%.4f %.4f %.4f "%(each[0], each[1], each[2]))
+                fileid.writelines("%.4f %.4f %.4f " %
+                                  (each[0], each[1], each[2]))
 
     def exportPose(self, filename):
         fileid = open(filename, "w")
@@ -242,27 +268,29 @@ class BVHExporter:
 
     def exportMotion(self, filename):
         with open(filename, "w") as fid:
-            self.exportAllPoses(fileid)
+            self.exportAllPoses(fid)
+
 
 def exportBVHPose():
     filenames = cmds.fileDialog2(fileMode=0, caption="Export BVH Pose")
 
     num = len(filenames)
     if num > 0:
-      fileName = filenames[0]
-      print fileName
-      exporter = BVHExporter()
-      exporter.exportPose(fileName)
+        fileName = filenames[0]
+        print fileName
+        exporter = BVHExporter()
+        exporter.exportPose(fileName)
+
 
 def exportBVHFile():
     filenames = cmds.fileDialog2(fileMode=0, caption="Export BVH File")
 
     num = len(filenames)
     if num > 0:
-      fileName = filenames[0]
-      print fileName
-      exporter = BVHExporter()
-      exporter.exportMotion(fileName)
+        fileName = filenames[0]
+        print fileName
+        exporter = BVHExporter()
+        exporter.exportMotion(fileName)
+
 
 exportBVHFile()
-
